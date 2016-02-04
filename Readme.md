@@ -2,6 +2,8 @@
 
 Runs periodic speed tests that are displayed in a nice chartjs diagramm
 
+![](./graph.png)
+
 ## Dev
 
 ```
