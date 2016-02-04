@@ -6,6 +6,7 @@ import _io from 'socket.io';
 import cors from 'express-cors';
 import { CronJob } from 'cron';
 
+import { settings } from './settings/settings.model';
 import settingsApi from './settings/settings.api';
 
 import speedtests from './api/speedtests';
@@ -55,10 +56,25 @@ speedtestModel.on('finished', (data) => {
   io.emit('speedtest.finished', data);
 });
 
-const job = new CronJob('*/5 * * * *', () => {
-  speedtestModel.trigger();
-}, undefined, false, undefined, undefined, true);
+let currentJob;
 
-job.start();
+settings.onValue((_settings) => {
+  if (currentJob) {
+    currentJob.stop()
+  }
+
+  const cronTime = _settings.speedtest.schedule;
+
+  if (cronTime) {
+    currentJob = new CronJob({
+      runOnInit: false,
+      start: true,
+      cronTime,
+      onTick: () => {
+        speedtestModel.trigger();
+      },
+    });
+  }
+});
 
 server.listen(3001);

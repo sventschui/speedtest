@@ -61,7 +61,7 @@ function patchSettings(payload) {
     }))
   );
 
-  _patchSettingsComplete.plug(result.doLog('done'));
+  _patchSettingsComplete.plug(result);
 
   return result;
 }
