@@ -24,20 +24,25 @@ settingsApi.get('/', (req, res, next) => {
 });
 
 settingsApi.patch('/', (req, res, next) => {
-  const result = patchSettings(req.body)
-    .endOnError();
-
-  result.onValue(() => {
-    res.send({
-      success: true,
+  patchSettings(req.body)
+    .map(() => ({
+      status: 200,
+      payload: {
+        success: true,
+      },
+    }))
+    .flatMapError(error => ({
+      status: 400,
+      payload: {
+        error,
+      },
+    }))
+    .first()
+    .onValue((data) => {
+      res.status(data.status || 200);
+      res.send(data.payload);
+      next();
     });
-    next();
-  });
-
-  result.onError(error => {
-    res.send(error);
-    next();
-  });
 });
 
 export default settingsApi;
