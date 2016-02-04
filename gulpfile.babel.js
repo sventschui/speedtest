@@ -82,7 +82,7 @@ const lintFiles = [
   './gulpfile.babel.js',
   './lib/**/*.js',
   './server/src/**/*.js',
-  './client/app/**/*.{js,jsx}',
+  './client/app/**/*{.js,.jsx}',
 ];
 
 gulp.task('dev', (cb) => {

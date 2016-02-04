@@ -1,7 +1,5 @@
 import React from 'react';
-import { Line } from 'react-chartjs';
-import moment from 'moment';
-import { Combinator } from "react-combinators/baconjs"
+import { Combinator } from 'react-combinators/baconjs';
 
 import DownloadUploadChart from './DownloadUploadChart';
 

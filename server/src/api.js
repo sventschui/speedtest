@@ -57,6 +57,8 @@ speedtestModel.on('finished', (data) => {
 
 const job = new CronJob('*/5 * * * *', () => {
   speedtestModel.trigger();
-}, undefined, true, undefined, undefined, true);
+}, undefined, false, undefined, undefined, true);
+
+job.start();
 
 server.listen(3001);

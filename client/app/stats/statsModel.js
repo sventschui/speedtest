@@ -2,7 +2,7 @@ import Bacon from 'baconjs';
 import { createAction } from 'megablob';
 import request from 'superagent';
 import io from 'socket.io-client';
-const socket =  io('http://localhost:3001');
+const socket = io('http://localhost:3001');
 
 const speedTestFinished = Bacon.fromBinder(cb => {
   socket.on('speedtest.finished', () => {
@@ -12,35 +12,37 @@ const speedTestFinished = Bacon.fromBinder(cb => {
 });
 
 export default function statsModel() {
-
   const filter = createAction();
 
-  const loadStats = Bacon.combineWith(filter.$, speedTestFinished.doLog('speedTestFinished'), filter => filter)
+  const loadStats = Bacon.combineWith(
+    filter.$,
+    speedTestFinished.doLog('speedTestFinished'),
+    _filter => _filter
+  )
     .startWith(null)
-    .flatMapLatest(filter => Bacon.fromNodeCallback(cb =>  {
+    .flatMapLatest(_filter => Bacon.fromNodeCallback(cb => {
       request.get('http://localhost:3001/speedtests')
-        .query(filter)
+        .query(_filter)
         .end(cb);
     }))
     .map(response => response.body);
 
   const stats = loadStats
-    .flatMapError(error => Bacon.once(null))
-    .merge(filter.$.map(filter => null));
+    .flatMapError(() => Bacon.once(null))
+    .merge(filter.$.map(() => null));
 
   const loading = loadStats
-    .map(stats => false)
-    .merge(filter.$.map(filter => true));
+    .map(() => false)
+    .merge(filter.$.map(() => true));
 
   const error = loadStats
-    .map(stats => null)
-    .flatMapError(error => Bacon.once(error));
+    .map(() => null)
+    .flatMapError(_error => Bacon.once(_error));
 
   return {
     filter,
     stats,
     loading,
     error,
-  }
-
+  };
 }

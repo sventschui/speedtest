@@ -9,9 +9,9 @@ settingsApi.use(json());
 
 settingsApi.get('/', (req, res, next) => {
   settings
-    .map(settings => ({
+    .map(data => ({
       success: true,
-      data: settings,
+      data,
     }))
     .flatMapError(error => ({
       error,

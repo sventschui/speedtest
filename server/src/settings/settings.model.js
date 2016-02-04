@@ -31,13 +31,13 @@ function patchSettings(payload) {
 
       const escapedKey = escapeKey.escape(key);
 
-      if (val == null) {
+      if (val === null) {
         del[escapedKey] = '';
       } else {
         update[escapedKey] = val;
       }
     });
-  } catch(e) {
+  } catch (e) {
     return Bacon.once(new Bacon.Error(e.message));
   }
 
@@ -71,22 +71,23 @@ const settings = Bacon.mergeAll(
   _patchSettingsComplete
 )
   .flatMapLatest(() => _settingsCollection)
-  .flatMapLatest(settingsCollection => Bacon.fromPromise(settingsCollection.find({}).limit(0).next()))
+  .flatMapLatest(settingsCollection =>
+    Bacon.fromPromise(settingsCollection.find({}).limit(0).next())
+  )
   .skipDuplicates()
-  .map(settings => {
-    if (settings) {
-      delete settings._id;
-    }
+  .map(_settings => {
+    // remove _id from settings
+    const { _id, ...filtered } = _settings;
 
-    return settings;
+    return filtered;
   })
   .toProperty();
 
-// TODO: monkey patch
-settings.onValue(val => {});
+settings.onValue(() => {
+  // TODO: get rid of monkey patch
+});
 
 export {
   settings,
   patchSettings,
-}
-
+};
