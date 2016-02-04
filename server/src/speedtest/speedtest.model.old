@@ -1,0 +1,92 @@
+import uuid from 'uuid';
+import speedtestNet from 'speedtest-net';
+import Bacon from 'baconjs';
+
+import createAction from '../utils/createAction';
+import cb from '../utils/db';
+
+const trigger = createAction();
+
+const started = trigger.$
+  .flatMap(ignore => Bacon.fromPromise(cb))
+  .map(db => ({
+    db,
+    speedtests: db.collection('speedtests'),
+    data: {
+      id: uuid.v4(),
+      finished: false,
+      startTime: new Date(),
+    },
+  }))
+  .flatMap((data) => Bacon.fromNodeCallback((cb =>
+      data.speedtests.insertOne(data.data, (error, result) => {
+        if (error) {
+          cb(error);
+        } else {
+          cb(null, data);
+        }
+      })
+  )))
+  .map(data => {
+    const _id = data.data._id;
+    const db = data.db;
+
+    delete data.data._id;
+
+    console.log(`Running speedtest ${data.data.id.red}`);
+
+    return speedtestNet()
+      .on('error', (error) => {
+
+        console.log(`Speedtest failed ${error}`);
+
+        speedtests.updateOne({
+          _id,
+        }, {
+          $set: {
+            finished: true,
+            error: true,
+            errorData: error,
+          },
+        }, (error) => {
+          if (error) {
+            console.log(`Failed to update speedtest data for test ${data.data.id.red} in mongodb ${error}`);
+          }
+        });
+
+      })
+      .on('data', (speedtestResult) => {
+        console.log(`Speedtest ${data.data.id.red} done`);
+
+        data.speedtests.updateOne({
+          _id,
+        }, {
+          $set: {
+            finished: true,
+            error: false,
+            result: speedtestResult,
+          },
+        }, (error) => {
+          if (error) {
+            console.log(`Failed to update speedtest data for test ${data.data.id.red} in mongodb ${error}`)
+          }
+        });
+
+      });
+  });
+
+const finished = started.flatMap(speedtest => Bacon.fromNodeCallback(cb => {
+  speedtest
+    .on('error', (error) => {
+      cb(error);
+    })
+    .on('done', (data) => {
+      cb(null, data);
+    });
+}));
+
+export {
+  trigger,
+  started,
+  finished,
+};

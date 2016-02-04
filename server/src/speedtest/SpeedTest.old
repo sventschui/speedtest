@@ -1,0 +1,86 @@
+
+
+export default class SpeedTest extends EventEmitter {
+
+  start() {
+    connect()
+      .then(db => {
+        const speedtests = db.collection('speedtests');
+
+        const id = uuid.v4();
+
+        console.log(`starting speedtest ${id.red}`);
+
+        const data = {
+          id,
+          finished: false,
+          startTime: new Date(),
+        };
+
+        callAsPromise(speedtests.insertOne.bind(speedtests, data))
+          .then(result => {
+
+            const _id = data._id;
+
+            delete data._id;
+
+            this.emit('initialized', data);
+
+            speedtestNet()
+              .on('error', (error) => {
+
+                this.emit(error, `Speedtest failed ${error}`);
+
+                speedtests.updateOne({
+                  _id,
+                }, {
+                  $set: {
+                    finished: true,
+                    error: true,
+                    errorData: error,
+                  },
+                }, (error) => {
+                  if(error) {
+                    this.emit(error, `Failed to update speedtest data for test ${data.id} in mongodb ${error}`);
+                  }
+
+                  db.close();
+                });
+
+              })
+              .on('data', (speedtestResult) => {
+                console.log(`Speedtest ${data.id.red} done`);
+
+                speedtests.updateOne({
+                  _id,
+                }, {
+                  $set: {
+                    finished: true,
+                    error: false,
+                    result: speedtestResult,
+                  },
+                }, (error) => {
+                  if(error) {
+                    console.log(`Failed to update speedtest data for test ${data.id} in mongodb ${error}`)
+                  }
+
+                  db.close();
+
+                });
+
+              });
+
+          })
+          .catch(error => {
+            db.close();
+            this.emit('error', `Failed to store speedtest in mongodb ${error}`);
+          });
+
+      })
+      .catch(error => {
+        this.emit('error', `Failed to connect to mongodb ${error}`);
+      });
+  }
+
+}
+
